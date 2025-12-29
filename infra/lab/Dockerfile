@@ -12,7 +12,11 @@ COPY requirements-course.txt /tmp/requirements-course.txt
 
 RUN if [ "${INSTALL_COURSE_DEPS}" = "1" ]; then \
       python3 -m pip install -U pip && \
-      python3 -m pip install -r /tmp/requirements-course.txt && \
+      python3 -m pip install \
+        --no-build-isolation \
+        --no-binary=mamba-ssm,causal-conv1d \
+        --extra-index-url https://pypi.org/simple \
+        -r /tmp/requirements-course.txt && \
       rm -f /tmp/requirements-course.txt ; \
     else \
       echo "Skipping course deps install (INSTALL_COURSE_DEPS=${INSTALL_COURSE_DEPS})"; \

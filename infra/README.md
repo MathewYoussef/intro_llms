@@ -63,6 +63,21 @@ Notes:
 - Rebuilding requires network access (pip downloads) unless the deps are already cached
   inside Docker layers.
 
+### Nemotron note (Transformers local)
+
+Nemotron uses custom model code on Hugging Face (`trust_remote_code=True`) and requires
+extra runtime deps like `mamba-ssm` (and typically `causal-conv1d`). Those are included
+in `infra/lab/requirements-course.txt`.
+
+If you see an error like `undefined symbol ... selective_scan_cuda...`, it usually means
+`mamba-ssm` was installed from a prebuilt wheel that doesn't match the container's
+PyTorch/CUDA. This repo forces source builds for `mamba-ssm` and `causal-conv1d` to
+compile them against the base image.
+
+Note: the base image uses the Jetson AI Lab pip index (`pypi.jetson-ai-lab.io`) by
+default. Some packages (like `mamba-ssm`) may not be available there, so the lab image
+build adds `https://pypi.org/simple` as an extra index.
+
 ## Start the vLLM server
 
 ```bash
@@ -74,5 +89,5 @@ The server exposes an OpenAI-compatible API on `http://localhost:8000/v1`.
 ## Notes
 
 - The repo is mounted into `/workspace` in the lab container.
-- Model cache is mounted at `/data/hf`, with `HF_HOME=/data/hf`.
+- Model cache is mounted at `/data/hf`, with `HF_HOME=/data/hf` and `HF_HUB_CACHE=/data/hf/hub`.
 - If you want to change the model, set `MODEL_ID` in `.env`.

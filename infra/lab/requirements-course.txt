@@ -12,6 +12,10 @@ evaluate
 peft
 trl
 
+# Nemotron runtime deps (required by the model's custom code)
+mamba-ssm
+causal-conv1d
+
 # Plotting / analysis
 matplotlib
 pandas
