@@ -1,0 +1,60 @@
+services:
+  lab:
+    build:
+      context: ./lab
+      dockerfile: Dockerfile
+      args:
+        LAB_BASE_IMAGE: ${LAB_BASE_IMAGE:-isaac-gr00t:r38.3.arm64-sbsa-cu130-24.04-jupyterlab_latest}
+        INSTALL_COURSE_DEPS: ${INSTALL_COURSE_DEPS:-0}
+    image: intro-llms/lab:cu130-jupyter
+    working_dir: /workspace
+    command:
+      - bash
+      - -lc
+      - >
+          jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+    ports:
+      - "8888:8888"
+    shm_size: 16g
+    runtime: nvidia
+    gpus: all
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HF_HOME: /data/hf
+      HF_HUB_CACHE: /data/hf/hub
+      TRANSFORMERS_CACHE: /data/hf/transformers
+      XDG_CACHE_HOME: /data/.cache
+    volumes:
+      - ..:/workspace
+      - ${DATA_DIR:-${HOME}/data}:/data
+    restart: "no"
+
+  vllm:
+    build:
+      context: ./vllm
+      dockerfile: Dockerfile
+    image: intro-llms/vllm:25.09-encodings
+    command:
+      - bash
+      - -lc
+      - >
+          vllm serve "${MODEL_ID}" --host 0.0.0.0 --port 8000
+    network_mode: host
+    shm_size: 16g
+    runtime: nvidia
+    gpus: all
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      MODEL_ID: ${MODEL_ID:-nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16}
+      HF_HOME: /data/hf
+      HF_HUB_CACHE: /data/hf/hub
+      TRANSFORMERS_CACHE: /data/hf/transformers
+      XDG_CACHE_HOME: /data/.cache
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ${DATA_DIR:-${HOME}/data}:/data
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    restart: "no"

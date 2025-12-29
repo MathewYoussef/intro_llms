@@ -1,0 +1,18 @@
+# Course-level dependencies (kept intentionally small).
+# Prefer using what's already inside the base `isaac-gr00t:*jupyterlab*` image.
+
+# Experiment hygiene
+python-dotenv
+rich
+
+# Core HF stack helpers (often already present, but harmless if redundant)
+accelerate
+datasets
+evaluate
+peft
+trl
+
+# Plotting / analysis
+matplotlib
+pandas
+scikit-learn
