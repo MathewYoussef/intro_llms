@@ -1505,4 +1505,22 @@ print(tokenizer.decode(gen_ids, skip_special_tokens=True))
 
 Cyanobacteria, as oxygenic photosynthetic prokaryotes, face intense light exposure in aquatic and terrestrial environments, which can lead to **photoinhibition** (damage to the photosynthetic apparatus) and **photodamage** (oxidative stress
 
-```
+Part 3 — Tokens: see what the model actually consumes
+
+We are making the `tokenization_peek` script.
+
+Checkpoint: Why does “the model predicts the next *token*” matter more than “the model predicts the next *word*”?
+
+An LLM cannot directly predict the next *word* as a stable unit. Logits (and therefore probabilities) are produced over token IDs, which are the fundamental unit the model operates on. Tokens are numbers that can represent part of a word, multiple words, whitespace + punctuation, etc. Words are reconstructed later by decoding token sequences.
+
+One experiment made this concrete: I set “cell” to be token ID `1987`. But as we can see from the output, “cell” did not trigger end-of-sequence. This indicates a crucial point: when a word is embedded in context, its tokenization can differ compared to when it is isolated. Instead of being just the word, the token might be a single letter, the preceding space + word, or a combined fragment. This speaks to the relationship between tokens and words: tokens are the fundamental unit with specific decode behavior, and a “word” can map to multiple tokenizations depending on context.
+
+Example context (excerpt):
+
+“Cyanobacteria are photoautotrophic bacteria that live at the interface of light and water, where they must harvest photons for photosynthesis while avoiding the damaging effects of excess excitation energy (EEE). Unlike eukaryotes whose photosynthetic apparatus is housed inside chloroplasts bounded by double membranes, cyanobacteria have their photosystems embedded directly into **a single, continuous plasma membrane** that also contains all other essential bioenergetic complexes (respiratory chains, transporters, etc.). This ‘prokaryotic’ organization imposes unique constraints on how protective strategies can be assembled, deployed, and coordinated.
+
+Below we walk through the main photoprotective pathways that cyanobacteria employ, linking each mechanism back to its structural context within the cell envelope. The focus is always on *how* the architecture—a lipid bilayer dotted with pigment–protein complexes—enables or limits those defenses.”
+
+So we deal in tokens, not words. A token can correspond to specific word variants (leading space, trailing space, word + punctuation, etc.). A specific word on its own might correlate to a subset of tokens, but only in the context in which that word is tokenized. For example, `"cat"`, `" cat"`, `"cat "`, and `"cat a"` can be associated with different tokens.
+
+Fundamentally, a model is trained to predict the next token; a word is not a stable unit. Tokenization is deterministic; the model assigns probabilities to token IDs based on context. Decoding operates at the token level.
