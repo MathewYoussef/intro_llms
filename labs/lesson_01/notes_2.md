@@ -572,3 +572,78 @@ Below we walk through the main photoprotective pathways that cyanobacteria emplo
 Therefore we deal in tokens, not in words. A token can relate to specific word variants (leading space, trailing space, word plus an extra letter after a space, etc.). A specific word on its own might correlate to a specific subset of tokens, but only in the context where that word is identified/tokenized. For example, `"cat"`, `" cat"`, `"cat "`, and `"cat a"` can be associated with different tokens.
 
 Fundamentally, a model is trained to predict the next token; a word is not a stable unit. Tokenization is deterministic, and the model assigns probabilities to token IDs based on context. Decoding operates at the token level.
+
+Activity 6 — Visualizing the probability distribution (Top-k = 10)
+
+We go to Activity 6: visualizing the probability distribution with `top_k=10`.
+
+```python
+prompt = "The capital of France is"
+inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+
+with torch.inference_mode():
+    logits = model(**inputs).logits[0, -1].float()  # next-token logits
+
+def show_topk(logits, temperature=1.0, k=10):
+    scaled = logits / max(float(temperature), 1e-8)
+    probs = torch.softmax(scaled, dim=-1)
+    vals, idxs = torch.topk(probs, k=k)
+    print(f"\nTop-{k} next tokens (temperature={temperature}):")
+    for p, idx in zip(vals.tolist(), idxs.tolist()):
+        token_str = tokenizer.decode([idx])
+        print(f"{token_str!r:>12}  p={p:.4f}")
+
+print("Prompt:", prompt)
+show_topk(logits, temperature=0.5)
+show_topk(logits, temperature=1.0)
+show_topk(logits, temperature=1.5)
+```
+
+Notes:
+
+- While “Paris” has the highest probability at each temperature, higher temperature (1.5) shows other tokens with more reasonable probability (e.g., `0.0518` vs Paris at `0.7456`), illustrating how the distribution flattens as temperature increases.
+- Another interesting observation is the actual token options: aside from the incorrect “Berlin,” many other tokens are symbols that seem to be used as starters or wrappers (like `' <'` or `' **'`). At temperature `0.5`, `' **'` is the second-highest token (p≈0.0003).
+
+Output:
+
+```
+Prompt: The capital of France is
+
+Top-10 next tokens (temperature=0.5):
+    ' Paris'  p=0.9997
+       ' **'  p=0.0003
+    '\u202f'  p=0.0000
+      ' **['  p=0.0000
+    ' paris'  p=0.0000
+        ' <'  p=0.0000
+        ' ['  p=0.0000
+   ' Berlin'  p=0.0000
+       ' \\'  p=0.0000
+     'Paris'  p=0.0000
+
+Top-10 next tokens (temperature=1.0):
+    ' Paris'  p=0.9731
+       ' **'  p=0.0178
+    '\u202f'  p=0.0027
+      ' **['  p=0.0011
+    ' paris'  p=0.0010
+        ' <'  p=0.0006
+        ' ['  p=0.0004
+   ' Berlin'  p=0.0003
+       ' \\'  p=0.0003
+     'Paris'  p=0.0003
+
+Top-10 next tokens (temperature=1.5):
+    ' Paris'  p=0.7456
+       ' **'  p=0.0518
+    '\u202f'  p=0.0148
+      ' **['  p=0.0083
+    ' paris'  p=0.0076
+        ' <'  p=0.0055
+        ' ['  p=0.0041
+   ' Berlin'  p=0.0035
+       ' \\'  p=0.0033
+     'Paris'  p=0.0030
+```
+
+It makes sense that some “filler” tokens (e.g., quotes or bold markers) are probabilistically plausible: in some Nemotron outputs, it wraps the answer in quotes or `**` when emphasizing a phrase. So in a single-word answer setting, it’s reasonable that the model assigns some probability mass to tokens that would surround the answer.
